@@ -1,0 +1,312 @@
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Platform,
+  KeyboardAvoidingView,
+} from 'react-native';
+import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const ChatApp = () => {  const [messages, setMessages] = useState([
+    { id: 1, text: 'Hey there! 👋', sender: 'them', timestamp: '09:41 AM', status: 'read' },
+    { id: 2, text: 'Hi! How are you?', sender: 'me', timestamp: '09:42 AM', status: 'read' },
+    { id: 3, type: 'image', url: 'https://api.a0.dev/assets/image?text=beautiful%20landscape%20nature%20photography&aspect=16:9', sender: 'them', timestamp: '09:43 AM', status: 'read' },
+    { id: 4, text: 'Check out this view!', sender: 'them', timestamp: '09:43 AM', status: 'read' },
+    { id: 5, text: 'Looks amazing!', sender: 'me', timestamp: '09:44 AM', status: 'delivered' },
+    { id: 6, text: 'Just sent you some files', sender: 'me', timestamp: '09:45 AM', status: 'sent' },
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isInCall, setIsInCall] = useState(false);
+  const scrollViewRef = useRef();
+
+  const handleSend = () => {
+    if (newMessage.trim()) {
+      const newMsg = {
+        id: messages.length + 1,
+        text: newMessage,
+        sender: 'me',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages([...messages, newMsg]);
+      setNewMessage('');
+    }
+  };
+
+  const handleAttachment = () => {
+    // Simulate adding an image
+    const newMsg = {
+      id: messages.length + 1,
+      type: 'image',
+      url: 'https://api.a0.dev/assets/image?text=beautiful%20sunset%20photography&aspect=16:9',
+      sender: 'me',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages([...messages, newMsg]);
+  };
+
+  const toggleCall = () => {
+    setIsInCall(!isInCall);
+  };  const renderMessageStatus = (status) => {
+    if (status === 'sent') {
+      return <Ionicons name="checkmark" size={16} color="#97999c" />;
+    } else if (status === 'delivered') {
+      return (
+        <View style={styles.doubleCheck}>
+          <Ionicons name="checkmark-done" size={16} color="#97999c" />
+        </View>
+      );    } else if (status === 'read') {
+      return (
+        <View style={styles.doubleCheck}>
+          <Ionicons name="checkmark-done" size={16} color="#ff4444" />
+        </View>
+      );
+    }
+    return null;
+  };
+
+  const renderMessage = (message) => {
+    const isMe = message.sender === 'me';
+    return (
+      <View
+        key={message.id}
+        style={[
+          styles.messageContainer,
+          isMe ? styles.myMessage : styles.theirMessage,
+        ]}>
+        <View style={styles.messageContent}>
+          {message.type === 'image' ? (
+            <Image source={{ uri: message.url }} style={styles.messageImage} />
+          ) : (
+            <Text style={[styles.messageText, isMe && styles.myMessageText]}>
+              {message.text}
+            </Text>
+          )}
+          <View style={styles.messageFooter}>
+            <Text style={[styles.timestamp, isMe && styles.myTimestamp]}>
+              {message.timestamp}
+            </Text>
+            {isMe && (
+              <View style={styles.statusContainer}>
+                {renderMessageStatus(message.status)}
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}>
+      {/* Header */}
+      <LinearGradient
+        colors={['#4a90e2', '#357abd']}
+        style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.userInfo}>
+            <Image
+              source={{ uri: 'https://api.a0.dev/assets/image?text=professional%20headshot%20portrait&aspect=1:1' }}
+              style={styles.avatar}
+            />
+            <View>
+              <Text style={styles.userName}>John Doe</Text>
+              <Text style={styles.userStatus}>
+                {isInCall ? 'On Call' : 'Online'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={toggleCall} style={styles.iconButton}>
+              <FontAwesome5
+                name={isInCall ? 'phone-slash' : 'phone'}
+                size={20}
+                color="white"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton}>
+              <MaterialIcons name="videocam" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </LinearGradient>
+
+      {/* Messages */}
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.messagesContainer}
+        onContentSizeChange={() => scrollViewRef.current.scrollToEnd()}
+        showsVerticalScrollIndicator={false}>
+        {messages.map(renderMessage)}
+      </ScrollView>
+
+      {/* Input Area */}
+      <View style={styles.inputContainer}>
+        <TouchableOpacity onPress={handleAttachment} style={styles.attachButton}>
+          <Ionicons name="attach" size={24} color="#4a90e2" />
+        </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Type a message..."
+          multiline
+        />
+        {newMessage.length > 0 ? (
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+            <Ionicons name="send" size={24} color="#4a90e2" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPressIn={() => setIsRecording(true)}
+            onPressOut={() => setIsRecording(false)}
+            style={styles.micButton}>
+            <FontAwesome5
+              name="microphone"
+              size={24}
+              color={isRecording ? '#ff4444' : '#4a90e2'}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  messageContent: {
+    flex: 1,
+  },
+  messageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 5,
+  },
+  doubleCheck: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingBottom: 15,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  userName: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  userStatus: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+  },
+  headerActions: {
+    flexDirection: 'row',
+  },
+  iconButton: {
+    marginLeft: 15,
+  },
+  messagesContainer: {
+    flex: 1,
+    padding: 15,
+  },
+  messageContainer: {
+    maxWidth: '80%',
+    marginVertical: 5,
+    padding: 12,
+    borderRadius: 20,
+  },
+  myMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#4a90e2',
+    borderTopRightRadius: 5,
+  },
+  theirMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'white',
+    borderTopLeftRadius: 5,
+  },
+  messageText: {
+    color: '#333',
+    fontSize: 16,
+  },
+  myMessageText: {
+    color: 'white',
+  },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 10,
+  },
+  timestamp: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 5,
+    alignSelf: 'flex-end',
+  },
+  myTimestamp: {
+    color: 'rgba(255,255,255,0.8)',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  attachButton: {
+    padding: 5,
+  },
+  input: {
+    flex: 1,
+    marginHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    fontSize: 16,
+    maxHeight: 100,
+  },
+  sendButton: {
+    pading: 5,
+  },
+  micButton: {
+    padding: 5,
+  },
+});
+
+export default ChatApp 
